@@ -1,5 +1,7 @@
 from flask import Blueprint
 
-customers_bp = Blueprint('customers', __name__)
+
+service_tickets_bp = Blueprint("service_tickets", __name__)
+
 
 from . import routes as routes  # pyright: ignore[reportUnusedImport]
