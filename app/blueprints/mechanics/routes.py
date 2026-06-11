@@ -5,11 +5,41 @@ from marshmallow import ValidationError
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from app.models import Mechanic, db
+from app.extensions import cache
+from app.models import Mechanic, Service, db
 
 from . import mechanics_bp
 from .schemas import MechanicSchema
+from ..service_tickets.schemas import ServiceTicketSchema
 
+
+cache_cached = cast(Any, cache.cached)  # pyright: ignore[reportUnknownMemberType]
+
+
+def _mechanic_service_tickets_cache_key() -> str:
+    view_args = request.view_args or {}
+    mechanic_id = view_args.get("mechanic_id", "unknown")
+    return f"mechanic_service_tickets_{mechanic_id}"
+
+
+def _mechanic_cache_key() -> str:
+    view_args = request.view_args or {}
+    mechanic_id = view_args.get("id", "unknown")
+    return f"mechanic_{mechanic_id}"
+
+
+@mechanics_bp.route("/<int:mechanic_id>/service-tickets", methods=["GET"])
+@cache_cached(timeout=60, make_cache_key=_mechanic_service_tickets_cache_key)
+def get_mechanic_service_tickets(mechanic_id: int):
+    mechanic = db.session.get(Mechanic, mechanic_id)
+    if mechanic is None:
+        return jsonify({"message": "Mechanic not found."}), 404
+
+    service_tickets = db.session.execute(
+        select(Service).where(Service.mechanic_id == mechanic_id)
+    ).scalars().all()
+    service_ticket_schema = ServiceTicketSchema(many=True)
+    return jsonify(service_ticket_schema.dump(service_tickets)), 200
 
 @mechanics_bp.route("/", methods=["POST"])
 def create_mechanic():
@@ -30,17 +60,20 @@ def create_mechanic():
 
     db.session.add(new_mechanic)
     db.session.commit()
+    cache.clear()
     return jsonify(mechanic_schema.dump(new_mechanic)), 201
 
 
 @mechanics_bp.route("/", methods=["GET"])
+@cache_cached(timeout=60, key_prefix="mechanics_all")
 def get_mechanics():
     mechanics = db.session.execute(select(Mechanic)).scalars().all()
     mechanic_schema = MechanicSchema(many=True)
-    return jsonify(mechanic_schema.dump(mechanics, many=True)), 200
+    return jsonify(mechanic_schema.dump(mechanics)), 200
 
 
 @mechanics_bp.route("/<int:id>", methods=["GET"])
+@cache_cached(timeout=60, make_cache_key=_mechanic_cache_key)
 def get_mechanic(id: int):
     mechanic = db.session.get(Mechanic, id)
     if mechanic is None:
@@ -63,6 +96,7 @@ def update_mechanic(id: int):
     mechanic_schema = MechanicSchema()
     updated_mechanic = cast(Mechanic, mechanic_schema.load(data, instance=mechanic, partial=True))  # pyright: ignore[reportUnknownMemberType]
     db.session.commit()
+    cache.clear()
     return jsonify(mechanic_schema.dump(updated_mechanic)), 200
 
 
@@ -78,6 +112,7 @@ def delete_mechanic(id: int):
     try:
         db.session.delete(mechanic)
         db.session.commit()
+        cache.clear()
     except IntegrityError:
         db.session.rollback()
         return jsonify({

@@ -2,6 +2,7 @@ from flask import jsonify, request
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from app.extensions import cache
 from app.models import Customer, Mechanic, Service, db
 
 from . import service_tickets_bp
@@ -31,12 +32,14 @@ def create_service_ticket():
     new_service_ticket = Service(customer=customer, mechanic=mechanic, description=description)
     db.session.add(new_service_ticket)
     db.session.commit()
+    cache.clear()
 
     service_ticket_schema = ServiceTicketSchema()
     return jsonify(service_ticket_schema.dump(new_service_ticket)), 201
 
 
 @service_tickets_bp.route("/", methods=["GET"])
+@cache.cached(timeout=60, key_prefix="service_tickets_all")
 def get_service_tickets():
     service_tickets = db.session.execute(select(Service)).scalars().all()
     service_ticket_schema = ServiceTicketSchema(many=True)
@@ -44,6 +47,7 @@ def get_service_tickets():
 
 
 @service_tickets_bp.route("/<int:id>", methods=["GET"])
+@cache.cached(timeout=60, key_prefix=lambda: f"service_ticket_{request.view_args['id']}")
 def get_service_ticket(id: int):
     service_ticket = db.session.get(Service, id)
     if service_ticket is None:
@@ -76,6 +80,7 @@ def update_service_ticket(id: int):
         service_ticket.description = description
 
     db.session.commit()
+    cache.clear()
     service_ticket_schema = ServiceTicketSchema()
     return jsonify(service_ticket_schema.dump(service_ticket)), 200
 
@@ -88,6 +93,7 @@ def delete_service_ticket(id: int):
 
     db.session.delete(service_ticket)
     db.session.commit()
+    cache.clear()
     return jsonify({"message": "Service ticket deleted successfully."}), 200
 
 
@@ -108,6 +114,7 @@ def assign_mechanic(id: int):
 
     service_ticket.mechanic = mechanic
     db.session.commit()
+    cache.clear()
 
     service_ticket_schema = ServiceTicketSchema()
     return jsonify(service_ticket_schema.dump(service_ticket)), 200
@@ -125,6 +132,7 @@ def remove_mechanic(id: int):
     service_ticket.mechanic = None
     try:
         db.session.commit()
+        cache.clear()
     except IntegrityError:
         db.session.rollback()
         return jsonify({
