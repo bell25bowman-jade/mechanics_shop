@@ -105,10 +105,27 @@ def login_customer():
 #======Get all customers========
 @customers_bp.route("/", methods=["GET"])
 def get_customers():
-    query = select(Customer)
+    page = request.args.get("page", default=1, type=int)
+    per_page = request.args.get("per_page", default=10, type=int)
+
+    if page < 1 or per_page < 1:
+        return jsonify({"message": "page and per_page must be positive integers."}), 400
+
+    if per_page > 100:
+        per_page = 100
+
+    query = select(Customer).offset((page - 1) * per_page).limit(per_page)
     customers = db.session.execute(query).scalars().all()
+    total_customers = db.session.execute(select(db.func.count(Customer.id))).scalar_one()
+
     customer_schema = CustomerSchema(many=True)
-    return jsonify(customer_schema.dump(customers, many=True)), 200
+    return jsonify({
+        "items": customer_schema.dump(customers, many=True),
+        "page": page,
+        "per_page": per_page,
+        "total": total_customers,
+        "pages": (total_customers + per_page - 1) // per_page,
+    }), 200
 
 #=====get customer by id========
 @customers_bp.route("/<int:id>", methods=["GET"])

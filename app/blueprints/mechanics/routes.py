@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from flask import jsonify, request
 from marshmallow import ValidationError
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from app.auth import token_required
@@ -71,6 +71,28 @@ def get_mechanics():
     mechanics = db.session.execute(select(Mechanic)).scalars().all()
     mechanic_schema = MechanicSchema(many=True)
     return jsonify(mechanic_schema.dump(mechanics)), 200
+
+
+@mechanics_bp.route("/most-tickets", methods=["GET"])
+@cache_cached(timeout=60, key_prefix="mechanics_most_tickets")
+def get_mechanics_by_most_tickets():
+    rows = db.session.execute(
+        select(Mechanic, func.count(Service.id).label("ticket_count"))
+        .outerjoin(Service, Service.mechanic_id == Mechanic.id)
+        .group_by(Mechanic.id)
+        .order_by(func.count(Service.id).desc(), Mechanic.id.asc())
+    ).all()
+
+    results = [
+        {
+            "id": mechanic.id,
+            "name": mechanic.name,
+            "email": mechanic.email,
+            "ticket_count": int(ticket_count),
+        }
+        for mechanic, ticket_count in rows
+    ]
+    return jsonify(results), 200
 
 
 @mechanics_bp.route("/<int:id>", methods=["GET"])
