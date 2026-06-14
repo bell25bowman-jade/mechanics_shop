@@ -5,6 +5,7 @@ from marshmallow import ValidationError
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from app.auth import token_required
 from app.extensions import cache
 from app.models import Mechanic, Service, db
 
@@ -84,7 +85,8 @@ def get_mechanic(id: int):
 
 
 @mechanics_bp.route("/<int:id>", methods=["PUT"])
-def update_mechanic(id: int):
+@token_required
+def update_mechanic(customer_id: int, id: int):
     mechanic = db.session.get(Mechanic, id)
     if mechanic is None:
         return jsonify({"message": "Mechanic not found."}), 404
@@ -101,7 +103,8 @@ def update_mechanic(id: int):
 
 
 @mechanics_bp.route("/<int:id>", methods=["DELETE"])
-def delete_mechanic(id: int):
+@token_required
+def delete_mechanic(customer_id: int, id: int):
     mechanic = db.session.get(Mechanic, id)
     if mechanic is None:
         return jsonify({"message": "Mechanic not found."}), 404

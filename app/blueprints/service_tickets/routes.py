@@ -2,6 +2,7 @@ from flask import jsonify, request
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from app.auth import token_required
 from app.extensions import cache
 from app.models import Customer, Mechanic, Service, db
 
@@ -10,12 +11,12 @@ from .schemas import ServiceTicketSchema
 
 
 @service_tickets_bp.route("/", methods=["POST"])
-def create_service_ticket():
+@token_required
+def create_service_ticket(customer_id: int):
     data = request.get_json()
     if not data:
         return jsonify({"message": "Request body is required."}), 400
 
-    customer_id = data.get("customer_id")
     description = data.get("description")
     mechanic_id = data.get("mechanic_id")
 
@@ -58,20 +59,26 @@ def get_service_ticket(id: int):
 
 
 @service_tickets_bp.route("/<int:id>", methods=["PUT"])
-def update_service_ticket(id: int):
+@token_required
+def update_service_ticket(customer_id: int, id: int):
     service_ticket = db.session.get(Service, id)
     if service_ticket is None:
         return jsonify({"message": "Service ticket not found."}), 404
+
+    if service_ticket.customer_id != customer_id:
+        return jsonify({"message": "Forbidden: you can only update your own service tickets."}), 403
 
     data = request.get_json()
     if not data:
         return jsonify({"message": "Request body is required."}), 400
 
-    customer_id = data.get("customer_id")
+    target_customer_id = data.get("customer_id")
     description = data.get("description")
 
-    if customer_id is not None:
-        customer = db.session.get(Customer, customer_id)
+    if target_customer_id is not None:
+        if target_customer_id != customer_id:
+            return jsonify({"message": "Forbidden: you cannot reassign ticket ownership."}), 403
+        customer = db.session.get(Customer, target_customer_id)
         if customer is None:
             return jsonify({"message": "Customer not found."}), 404
         service_ticket.customer = customer
@@ -86,10 +93,14 @@ def update_service_ticket(id: int):
 
 
 @service_tickets_bp.route("/<int:id>", methods=["DELETE"])
-def delete_service_ticket(id: int):
+@token_required
+def delete_service_ticket(customer_id: int, id: int):
     service_ticket = db.session.get(Service, id)
     if service_ticket is None:
         return jsonify({"message": "Service ticket not found."}), 404
+
+    if service_ticket.customer_id != customer_id:
+        return jsonify({"message": "Forbidden: you can only delete your own service tickets."}), 403
 
     db.session.delete(service_ticket)
     db.session.commit()
@@ -98,10 +109,14 @@ def delete_service_ticket(id: int):
 
 
 @service_tickets_bp.route("/<int:id>/assign-mechanic", methods=["PUT"])
-def assign_mechanic(id: int):
+@token_required
+def assign_mechanic(customer_id: int, id: int):
     service_ticket = db.session.get(Service, id)
     if service_ticket is None:
         return jsonify({"message": "Service ticket not found."}), 404
+
+    if service_ticket.customer_id != customer_id:
+        return jsonify({"message": "Forbidden: you can only modify your own service tickets."}), 403
 
     data = request.get_json()
     if not data:
@@ -121,10 +136,14 @@ def assign_mechanic(id: int):
 
 
 @service_tickets_bp.route("/<int:id>/remove-mechanic", methods=["PUT"])
-def remove_mechanic(id: int):
+@token_required
+def remove_mechanic(customer_id: int, id: int):
     service_ticket = db.session.get(Service, id)
     if service_ticket is None:
         return jsonify({"message": "Service ticket not found."}), 404
+
+    if service_ticket.customer_id != customer_id:
+        return jsonify({"message": "Forbidden: you can only modify your own service tickets."}), 403
 
     if service_ticket.mechanic is None:
         return jsonify({"message": "Service ticket already has no mechanic."}), 200

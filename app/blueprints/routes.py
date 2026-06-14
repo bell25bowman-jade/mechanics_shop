@@ -1,11 +1,17 @@
 from flask import request, jsonify
-from marshmallow import ValidationError
 from typing import Any, cast
-from .usersSchemas import CustomerSchema
+from marshmallow import ValidationError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from app.auth import encode_token, token_required
+from app.blueprints.service_tickets.schemas import ServiceTicketSchema
+from app.models import Customer, Service, db
+
+from .usersSchemas import CustomerSchema, login_schema
 from sqlalchemy import select
 from . import customers_bp
 
-from app.models import db, Customer
 @customers_bp.route("/info", methods=["GET"])
 def index():
     return jsonify({
@@ -29,24 +35,72 @@ def method_not_allowed(err: Any):
 #=======CREATE CUSTOMER========
 @customers_bp.route("/", methods=["POST"])
 def create_customer():
+    raw_data = request.get_json(silent=True)
+    if not isinstance(raw_data, dict):
+        return jsonify({
+            "message": "Request body must be valid JSON.",
+            "hint": "Set Content-Type to application/json and send a JSON object.",
+        }), 400
+
+    payload = cast(dict[str, Any], raw_data)
+
+    # Accept common client key styles.
+    if "make_model" not in payload:
+        make_model_alias = payload.get("makeModel") or payload.get("make-model")
+        if make_model_alias is not None:
+            payload["make_model"] = make_model_alias
+
+    customer_schema = CustomerSchema()
+    try:
+        new_customer = cast(Customer, customer_schema.load(payload))  # pyright: ignore[reportUnknownMemberType]
+    except ValidationError as err:
+        return jsonify({
+            "message": "Validation failed.",
+            "errors": cast(Any, err.messages),  # pyright: ignore[reportUnknownMemberType]
+            "required_fields": ["name", "email", "password", "make_model"],
+            "date_format": "YYYY-MM-DD",
+        }), 400
+
+    query = select(Customer).where(Customer.email == payload.get("email"))
+    existing_customer = db.session.execute(query).scalar_one_or_none()
+    if existing_customer:
+        return jsonify({"message": "Customer with this email already exists."}), 400
+
+    new_customer.password = generate_password_hash(new_customer.password)
+
+    db.session.add(new_customer)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"message": "Invalid or duplicate customer data."}), 400
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({"message": "Unable to create customer."}), 500
+
+    return jsonify(customer_schema.dump(new_customer)), 201
+
+
+@customers_bp.route("/login", methods=["POST"])
+def login_customer():
     data = request.get_json()
     if not data:
         return jsonify({"message": "Request body is required."}), 400
 
-    query = select(Customer).where(Customer.name == data.get("name"))
-    existing_customer = db.session.execute(query).scalar_one_or_none()
-    if existing_customer:
-        return jsonify({"message": "Customer with this name already exists."}), 400
+    validation_errors = login_schema.validate(data)  # pyright: ignore[reportUnknownMemberType]
+    if validation_errors:
+        return jsonify(validation_errors), 400
 
-    customer_schema = CustomerSchema()
-    try:
-        new_customer = cast(Customer, customer_schema.load(data))  # pyright: ignore[reportUnknownMemberType]
-    except ValidationError as err:
-        return jsonify(cast(Any, err.messages)), 400  # pyright: ignore[reportUnknownMemberType]
+    query = select(Customer).where(Customer.email == data["email"])
+    customer = db.session.execute(query).scalar_one_or_none()
+    if customer is None:
+        return jsonify({"message": "Invalid email or password."}), 401
 
-    db.session.add(new_customer)
-    db.session.commit()
-    return jsonify(customer_schema.dump(new_customer)), 201
+    if not check_password_hash(customer.password, cast(str, data["password"])):
+        return jsonify({"message": "Invalid email or password."}), 401
+
+    token = encode_token(customer.id)
+    return jsonify({"token": token}), 200
 
 #======Get all customers========
 @customers_bp.route("/", methods=["GET"])
@@ -65,13 +119,34 @@ def get_customer(id: int):
     customer_schema = CustomerSchema()
     return jsonify(customer_schema.dump(customer)), 200
 
+
+@customers_bp.route("/my-tickets", methods=["GET"])
+@token_required
+def get_my_tickets(customer_id: int):
+    service_tickets = db.session.execute(
+        select(Service).where(Service.customer_id == customer_id)
+    ).scalars().all()
+    service_ticket_schema = ServiceTicketSchema(many=True)
+    return jsonify(service_ticket_schema.dump(service_tickets)), 200
+
 #=====update customer by id========
 @customers_bp.route("/<int:id>", methods=["PUT"])
-def update_customer(id: int):
+@token_required
+def update_customer(customer_id: int, id: int):
+    if customer_id != id:
+        return jsonify({"message": "Forbidden: you can only update your own profile."}), 403
+
     customer = db.session.get(Customer, id)
     if customer is None:
         return jsonify({"message": "Customer not found."}), 404
+
     data = request.get_json()
+    if not data:
+        return jsonify({"message": "Request body is required."}), 400
+
+    if "password" in data:
+        data["password"] = generate_password_hash(cast(str, data["password"]))
+
     customer_schema = CustomerSchema()
     updated_customer = cast(Customer, customer_schema.load(data, instance=customer, partial=True))  # pyright: ignore[reportUnknownMemberType]
     db.session.commit()
@@ -79,7 +154,11 @@ def update_customer(id: int):
 
 #====delete customer by id========
 @customers_bp.route("/<int:id>", methods=["DELETE"])
-def delete_customer(id: int):
+@token_required
+def delete_customer(customer_id: int, id: int):
+    if customer_id != id:
+        return jsonify({"message": "Forbidden: you can only delete your own profile."}), 403
+
     customer = db.session.get(Customer, id)
     if customer is None:
         return jsonify({"message": "Customer not found."}), 404

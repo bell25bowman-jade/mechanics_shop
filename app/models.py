@@ -29,6 +29,8 @@ class Customer(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(db.String(255), nullable=False)
+    email: Mapped[str] = mapped_column(db.String(255), unique=True, nullable=False)
+    password: Mapped[str] = mapped_column(db.String(255), nullable=False)
     make_model: Mapped[str] = mapped_column(db.String(255), nullable=False)
     date: Mapped[DATE] = mapped_column(DATE)
 
