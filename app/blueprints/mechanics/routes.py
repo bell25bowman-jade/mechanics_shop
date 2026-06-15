@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.auth import token_required
 from app.extensions import cache
-from app.models import Mechanic, Service, db
+from app.models import Mechanic, Service, db, service_mechanic
 
 from . import mechanics_bp
 from .schemas import MechanicSchema
@@ -37,7 +37,9 @@ def get_mechanic_service_tickets(mechanic_id: int):
         return jsonify({"message": "Mechanic not found."}), 404
 
     service_tickets = db.session.execute(
-        select(Service).where(Service.mechanic_id == mechanic_id)
+        select(Service)
+        .join(service_mechanic, service_mechanic.c.service_id == Service.id)
+        .where(service_mechanic.c.mechanic_id == mechanic_id)
     ).scalars().all()
     service_ticket_schema = ServiceTicketSchema(many=True)
     return jsonify(service_ticket_schema.dump(service_tickets)), 200
@@ -77,10 +79,10 @@ def get_mechanics():
 @cache_cached(timeout=60, key_prefix="mechanics_most_tickets")
 def get_mechanics_by_most_tickets():
     rows = db.session.execute(
-        select(Mechanic, func.count(Service.id).label("ticket_count"))
-        .outerjoin(Service, Service.mechanic_id == Mechanic.id)
+        select(Mechanic, func.count(service_mechanic.c.service_id).label("ticket_count"))
+        .outerjoin(service_mechanic, service_mechanic.c.mechanic_id == Mechanic.id)
         .group_by(Mechanic.id)
-        .order_by(func.count(Service.id).desc(), Mechanic.id.asc())
+        .order_by(func.count(service_mechanic.c.service_id).desc(), Mechanic.id.asc())
     ).all()
 
     results = [

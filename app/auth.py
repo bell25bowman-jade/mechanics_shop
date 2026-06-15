@@ -1,23 +1,33 @@
 from functools import wraps
 from typing import Any, Callable, TypeVar, cast
+from datetime import datetime, timedelta, timezone
 
 from flask import current_app, jsonify, request
-from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+from jose import jwt
+from jose.exceptions import ExpiredSignatureError, JWTError
 
 
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def _serializer() -> URLSafeTimedSerializer:
-    secret_key = current_app.config.get("SECRET_KEY")
+def _jwt_secret() -> str:
+    secret_key = current_app.config.get("JWT_SECRET_KEY") or current_app.config.get("SECRET_KEY")
     if not secret_key:
-        raise RuntimeError("SECRET_KEY is not configured.")
-    return URLSafeTimedSerializer(secret_key=secret_key, salt="customer-auth")
+        raise RuntimeError("SECRET_KEY or JWT_SECRET_KEY is not configured.")
+    return cast(str, secret_key)
+
+
+def _jwt_algorithm() -> str:
+    return cast(str, current_app.config.get("JWT_ALGORITHM", "HS256"))
 
 
 def encode_token(customer_id: int) -> str:
-    token_payload = {"customer_id": customer_id}
-    return _serializer().dumps(token_payload)
+    expires_in = int(current_app.config.get("TOKEN_MAX_AGE_SECONDS", 3600))
+    payload = {
+        "customer_id": customer_id,
+        "exp": datetime.now(timezone.utc) + timedelta(seconds=expires_in),
+    }
+    return cast(str, jwt.encode(payload, _jwt_secret(), algorithm=_jwt_algorithm()))
 
 
 def token_required(func: F) -> F:
@@ -32,13 +42,10 @@ def token_required(func: F) -> F:
             return jsonify({"message": "Bearer token is required."}), 401
 
         try:
-            token_data = _serializer().loads(
-                token,
-                max_age=int(current_app.config.get("TOKEN_MAX_AGE_SECONDS", 3600)),
-            )
-        except SignatureExpired:
+            token_data = cast(dict[str, Any], jwt.decode(token, _jwt_secret(), algorithms=[_jwt_algorithm()]))
+        except ExpiredSignatureError:
             return jsonify({"message": "Token has expired."}), 401
-        except BadSignature:
+        except JWTError:
             return jsonify({"message": "Invalid token."}), 401
 
         customer_id = token_data.get("customer_id")

@@ -10,6 +10,18 @@ class Base(DeclarativeBase):
 
 db = SQLAlchemy(model_class=Base)
 
+service_inventory = db.Table(
+    'service_inventory',
+    db.Column('service_id', db.ForeignKey('services.id'), primary_key=True),
+    db.Column('inventory_id', db.ForeignKey('inventory.id'), primary_key=True),
+)
+
+service_mechanic = db.Table(
+    'service_mechanic',
+    db.Column('service_id', db.ForeignKey('services.id'), primary_key=True),
+    db.Column('mechanic_id', db.ForeignKey('mechanics.id'), primary_key=True),
+)
+
 
 
 class Mechanic(Base):
@@ -23,6 +35,10 @@ class Mechanic(Base):
     salary: Mapped[float] = mapped_column(db.Float, nullable=False)
 
     services: Mapped[list['Service']] = relationship(back_populates='mechanic')
+    service_tickets: Mapped[list['Service']] = relationship(
+        secondary=service_mechanic,
+        back_populates='mechanics',
+    )
     
 class Customer(Base):
     __tablename__ = 'customers'
@@ -46,3 +62,24 @@ class Service(Base):
 
     mechanic: Mapped[Optional['Mechanic']] = relationship(back_populates='services')
     customer: Mapped['Customer'] = relationship(back_populates='services')
+    mechanics: Mapped[list['Mechanic']] = relationship(
+        secondary=service_mechanic,
+        back_populates='service_tickets',
+    )
+    inventory_items: Mapped[list['Inventory']] = relationship(
+        secondary=service_inventory,
+        back_populates='service_tickets',
+    )
+
+
+class Inventory(Base):
+    __tablename__ = 'inventory'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(db.String(255), nullable=False)
+    price: Mapped[float] = mapped_column(db.Float, nullable=False)
+
+    service_tickets: Mapped[list['Service']] = relationship(
+        secondary=service_inventory,
+        back_populates='inventory_items',
+    )

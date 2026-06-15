@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.auth import token_required
 from app.extensions import cache
-from app.models import Customer, Mechanic, Service, db
+from app.models import Customer, Inventory, Mechanic, Service, db
 
 from . import service_tickets_bp
 from .schemas import ServiceTicketSchema
@@ -42,6 +42,8 @@ def create_service_ticket(customer_id: int):
             return jsonify({"message": "Mechanic not found."}), 404
 
     new_service_ticket = Service(customer=customer, mechanic=mechanic, description=description)
+    if mechanic is not None:
+        new_service_ticket.mechanics.append(mechanic)
     db.session.add(new_service_ticket)
     db.session.commit()
     cache.clear()
@@ -139,6 +141,8 @@ def assign_mechanic(customer_id: int, id: int):
         return jsonify({"message": "Mechanic not found."}), 404
 
     service_ticket.mechanic = mechanic
+    if mechanic not in service_ticket.mechanics:
+        service_ticket.mechanics.append(mechanic)
     db.session.commit()
     cache.clear()
 
@@ -156,9 +160,11 @@ def remove_mechanic(customer_id: int, id: int):
     if service_ticket.customer_id != customer_id:
         return jsonify({"message": "Forbidden: you can only modify your own service tickets."}), 403
 
-    if service_ticket.mechanic is None:
+    if service_ticket.mechanic is None and not service_ticket.mechanics:
         return jsonify({"message": "Service ticket already has no mechanic."}), 200
 
+    if service_ticket.mechanic is not None and service_ticket.mechanic in service_ticket.mechanics:
+        service_ticket.mechanics.remove(service_ticket.mechanic)
     service_ticket.mechanic = None
     try:
         db.session.commit()
@@ -202,16 +208,53 @@ def edit_service_ticket_mechanics(customer_id: int, id: int):
     add_ids = cast(list[int], add_ids_raw)
     remove_ids = cast(list[int], remove_ids_raw)
 
-    if service_ticket.mechanic_id in remove_ids:
-        service_ticket.mechanic = None
+    for mechanic_id in remove_ids:
+        mechanic = db.session.get(Mechanic, mechanic_id)
+        if mechanic is not None and mechanic in service_ticket.mechanics:
+            service_ticket.mechanics.remove(mechanic)
+            if service_ticket.mechanic_id == mechanic_id:
+                service_ticket.mechanic = None
 
-    if add_ids:
-        # Current data model supports one mechanic per ticket; last add_id wins.
-        last_mechanic_id = add_ids[-1]
-        mechanic = db.session.get(Mechanic, last_mechanic_id)
+    for mechanic_id in add_ids:
+        mechanic = db.session.get(Mechanic, mechanic_id)
         if mechanic is None:
-            return jsonify({"message": f"Mechanic with id {last_mechanic_id} not found."}), 404
-        service_ticket.mechanic = mechanic
+            return jsonify({"message": f"Mechanic with id {mechanic_id} not found."}), 404
+        if mechanic not in service_ticket.mechanics:
+            service_ticket.mechanics.append(mechanic)
+
+    if service_ticket.mechanic is None and service_ticket.mechanics:
+        service_ticket.mechanic = service_ticket.mechanics[-1]
+
+    db.session.commit()
+    cache.clear()
+    service_ticket_schema = ServiceTicketSchema()
+    return jsonify(service_ticket_schema.dump(service_ticket)), 200
+
+
+@service_tickets_bp.route("/<int:id>/add-part", methods=["PUT"])
+@token_required
+def add_part_to_service_ticket(customer_id: int, id: int):
+    service_ticket = db.session.get(Service, id)
+    if service_ticket is None:
+        return jsonify({"message": "Service ticket not found."}), 404
+
+    if service_ticket.customer_id != customer_id:
+        return jsonify({"message": "Forbidden: you can only modify your own service tickets."}), 403
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"message": "Request body is required."}), 400
+
+    inventory_id = data.get("inventory_id")
+    if not isinstance(inventory_id, int):
+        return jsonify({"message": "inventory_id is required and must be an integer."}), 400
+
+    inventory_item = db.session.get(Inventory, inventory_id)
+    if inventory_item is None:
+        return jsonify({"message": "Inventory item not found."}), 404
+
+    if inventory_item not in service_ticket.inventory_items:
+        service_ticket.inventory_items.append(inventory_item)
 
     db.session.commit()
     cache.clear()

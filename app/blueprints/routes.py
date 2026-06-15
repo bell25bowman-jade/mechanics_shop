@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.auth import encode_token, token_required
+from app.extensions import limiter
 from app.blueprints.service_tickets.schemas import ServiceTicketSchema
 from app.models import Customer, Service, db
 
@@ -82,6 +83,7 @@ def create_customer():
 
 
 @customers_bp.route("/login", methods=["POST"])
+@limiter.limit("5 per minute")
 def login_customer():
     data = request.get_json()
     if not data:
