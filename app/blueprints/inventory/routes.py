@@ -1,15 +1,14 @@
 from typing import Any, cast
-
 from flask import jsonify, request
 from marshmallow import ValidationError
 from sqlalchemy import select
-
 from app.auth import token_required
 from app.extensions import cache
 from app.models import Inventory, db
-
+from typing import cast
 from . import inventory_bp
 from .schemas import InventorySchema
+from typing import Any, cast
 
 
 cache_cached = cast(Any, cache.cached)  # pyright: ignore[reportUnknownMemberType]
@@ -88,3 +87,24 @@ def delete_inventory_item(customer_id: int, id: int):
     db.session.commit()
     cache.clear()
     return jsonify({"message": "Inventory item deleted successfully."}), 200
+
+@inventory_bp.route("/delete", methods=["DELETE"])
+@token_required
+def delete_items(customer_id: int):
+    data = request.get_json()
+    if not data or "ids" not in data:
+        return jsonify({"message": "Request body must contain 'ids' field."}), 400
+
+    ids = data["ids"]
+    if not isinstance(ids, list) or not all(isinstance(i, int) for i in ids):
+        return jsonify({"message": "'ids' field must be a list of integers."}), 400
+
+    items = db.session.execute(select(Inventory).where(Inventory.id.in_(ids))).scalars().all()
+    if not items:
+        return jsonify({"message": "No inventory items found for the provided IDs."}), 404
+
+    for item in items:
+        db.session.delete(item)
+    db.session.commit()
+    cache.clear()
+    return jsonify({"message": f"{len(items)} inventory items deleted successfully."}), 200

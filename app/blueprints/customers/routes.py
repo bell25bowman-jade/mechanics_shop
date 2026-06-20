@@ -11,7 +11,7 @@ from app.models import Customer, Service, db
 
 from .usersSchemas import CustomerSchema, login_schema
 from sqlalchemy import select
-from . import customers_bp
+from .. import customers_bp
 
 @customers_bp.route("/info", methods=["GET"])
 def index():

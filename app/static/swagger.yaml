@@ -1,0 +1,14 @@
+swagger: "2.0"
+info:
+  title: "Mechanics Shop API"
+  description: "API for managing customers and service tickets in a mechanics shop."
+  version: "1.0.0"
+host: "127.0.0.1:5000"
+schemes:
+  - "http"
+consumes:
+  - "application/json"
+produces:
+  - "application/json"
+paths:
+definitions:
