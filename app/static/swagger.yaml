@@ -79,7 +79,7 @@ paths:
         200:
           description: "Paginated customer list"
           schema:
-            $ref: "#/definitions/CustomerListResponse"
+            $ref: "#/definitions/CustomerListResponseDefinition"
           examples:
             application/json:
               items:
@@ -95,7 +95,7 @@ paths:
         400:
           description: "Invalid paging values"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "page and per_page must be positive integers."
@@ -111,12 +111,12 @@ paths:
           required: true
           description: "Customer creation payload"
           schema:
-            $ref: "#/definitions/CustomerCreateRequest"
+            $ref: "#/definitions/CustomerCreatePayloadDefinition"
       responses:
         201:
           description: "Customer created"
           schema:
-            $ref: "#/definitions/Customer"
+            $ref: "#/definitions/CustomerResponseDefinition"
           examples:
             application/json:
               id: 1
@@ -127,7 +127,7 @@ paths:
         400:
           description: "Invalid or duplicate data"
           schema:
-            $ref: "#/definitions/MessageWithErrorsResponse"
+            $ref: "#/definitions/MessageWithErrorsResponseDefinition"
           examples:
             application/json:
               message: "Validation failed."
@@ -147,26 +147,26 @@ paths:
           required: true
           description: "Login payload"
           schema:
-            $ref: "#/definitions/LoginRequest"
+            $ref: "#/definitions/LoginPayloadDefinition"
       responses:
         200:
           description: "Login succeeded"
           schema:
-            $ref: "#/definitions/TokenResponse"
+            $ref: "#/definitions/TokenResponseDefinition"
           examples:
             application/json:
               token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example"
         400:
           description: "Missing or invalid body"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Request body is required."
         401:
           description: "Invalid credentials"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Invalid email or password."
@@ -187,7 +187,7 @@ paths:
         200:
           description: "Customer found"
           schema:
-            $ref: "#/definitions/Customer"
+            $ref: "#/definitions/CustomerResponseDefinition"
           examples:
             application/json:
               id: 1
@@ -198,7 +198,7 @@ paths:
         404:
           description: "Customer not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Customer not found."
@@ -221,12 +221,12 @@ paths:
           required: true
           description: "Partial customer update payload"
           schema:
-            $ref: "#/definitions/CustomerUpdateRequest"
+            $ref: "#/definitions/CustomerUpdatePayloadDefinition"
       responses:
         200:
           description: "Customer updated"
           schema:
-            $ref: "#/definitions/Customer"
+            $ref: "#/definitions/CustomerResponseDefinition"
           examples:
             application/json:
               id: 1
@@ -237,14 +237,14 @@ paths:
         403:
           description: "Forbidden"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Forbidden: you can only update your own profile."
         404:
           description: "Customer not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Customer not found."
@@ -266,21 +266,21 @@ paths:
         200:
           description: "Customer deleted"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Customer deleted successfully."
         403:
           description: "Forbidden"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Forbidden: you can only delete your own profile."
         404:
           description: "Customer not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Customer not found."
@@ -299,7 +299,7 @@ paths:
           schema:
             type: "array"
             items:
-              $ref: "#/definitions/ServiceTicket"
+              $ref: "#/definitions/ServiceTicketResponseDefinition"
           examples:
             application/json:
               - id: 10
@@ -319,7 +319,7 @@ paths:
           schema:
             type: "array"
             items:
-              $ref: "#/definitions/Mechanic"
+              $ref: "#/definitions/MechanicResponseDefinition"
           examples:
             application/json:
               - id: 2
@@ -340,12 +340,12 @@ paths:
           required: true
           description: "Mechanic payload"
           schema:
-            $ref: "#/definitions/MechanicCreateRequest"
+            $ref: "#/definitions/MechanicCreatePayloadDefinition"
       responses:
         201:
           description: "Mechanic created"
           schema:
-            $ref: "#/definitions/Mechanic"
+            $ref: "#/definitions/MechanicResponseDefinition"
           examples:
             application/json:
               id: 2
@@ -357,7 +357,7 @@ paths:
         400:
           description: "Duplicate or invalid mechanic"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Mechanic with this name already exists."
@@ -374,7 +374,7 @@ paths:
           schema:
             type: "array"
             items:
-              $ref: "#/definitions/MechanicTicketCount"
+              $ref: "#/definitions/MechanicTicketCountResponseDefinition"
           examples:
             application/json:
               - id: 2
@@ -398,7 +398,7 @@ paths:
         200:
           description: "Mechanic found"
           schema:
-            $ref: "#/definitions/Mechanic"
+            $ref: "#/definitions/MechanicResponseDefinition"
           examples:
             application/json:
               id: 2
@@ -410,7 +410,7 @@ paths:
         404:
           description: "Mechanic not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Mechanic not found."
@@ -433,12 +433,12 @@ paths:
           required: true
           description: "Partial mechanic update payload"
           schema:
-            $ref: "#/definitions/MechanicUpdateRequest"
+            $ref: "#/definitions/MechanicUpdatePayloadDefinition"
       responses:
         200:
           description: "Mechanic updated"
           schema:
-            $ref: "#/definitions/Mechanic"
+            $ref: "#/definitions/MechanicResponseDefinition"
           examples:
             application/json:
               id: 2
@@ -450,7 +450,7 @@ paths:
         404:
           description: "Mechanic not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Mechanic not found."
@@ -472,21 +472,21 @@ paths:
         200:
           description: "Mechanic deleted"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Mechanic deleted successfully."
         400:
           description: "Delete failed due to schema constraints"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Unable to delete mechanic. Ensure services.mechanic_id is nullable in the database schema."
         404:
           description: "Mechanic not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Mechanic not found."
@@ -509,7 +509,7 @@ paths:
           schema:
             type: "array"
             items:
-              $ref: "#/definitions/ServiceTicket"
+              $ref: "#/definitions/ServiceTicketResponseDefinition"
           examples:
             application/json:
               - id: 10
@@ -519,7 +519,7 @@ paths:
         404:
           description: "Mechanic not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Mechanic not found."
@@ -536,7 +536,7 @@ paths:
           schema:
             type: "array"
             items:
-              $ref: "#/definitions/ServiceTicket"
+              $ref: "#/definitions/ServiceTicketResponseDefinition"
           examples:
             application/json:
               - id: 10
@@ -557,12 +557,12 @@ paths:
           required: true
           description: "Service ticket payload"
           schema:
-            $ref: "#/definitions/ServiceTicketCreateRequest"
+            $ref: "#/definitions/ServiceTicketCreatePayloadDefinition"
       responses:
         201:
           description: "Service ticket created"
           schema:
-            $ref: "#/definitions/ServiceTicket"
+            $ref: "#/definitions/ServiceTicketResponseDefinition"
           examples:
             application/json:
               id: 10
@@ -572,7 +572,7 @@ paths:
         404:
           description: "Referenced customer or mechanic not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Mechanic not found."
@@ -593,7 +593,7 @@ paths:
         200:
           description: "Service ticket found"
           schema:
-            $ref: "#/definitions/ServiceTicket"
+            $ref: "#/definitions/ServiceTicketResponseDefinition"
           examples:
             application/json:
               id: 10
@@ -603,7 +603,7 @@ paths:
         404:
           description: "Service ticket not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Service ticket not found."
@@ -626,12 +626,12 @@ paths:
           required: true
           description: "Service ticket update payload"
           schema:
-            $ref: "#/definitions/ServiceTicketUpdateRequest"
+            $ref: "#/definitions/ServiceTicketUpdatePayloadDefinition"
       responses:
         200:
           description: "Service ticket updated"
           schema:
-            $ref: "#/definitions/ServiceTicket"
+            $ref: "#/definitions/ServiceTicketResponseDefinition"
           examples:
             application/json:
               id: 10
@@ -641,14 +641,14 @@ paths:
         403:
           description: "Forbidden"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Forbidden: you can only update your own service tickets."
         404:
           description: "Service ticket not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Service ticket not found."
@@ -670,21 +670,21 @@ paths:
         200:
           description: "Service ticket deleted"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Service ticket deleted successfully."
         403:
           description: "Forbidden"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Forbidden: you can only delete your own service tickets."
         404:
           description: "Service ticket not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Service ticket not found."
@@ -708,12 +708,12 @@ paths:
           required: true
           description: "Mechanic assignment payload"
           schema:
-            $ref: "#/definitions/AssignMechanicRequest"
+            $ref: "#/definitions/AssignMechanicPayloadDefinition"
       responses:
         200:
           description: "Mechanic assigned"
           schema:
-            $ref: "#/definitions/ServiceTicket"
+            $ref: "#/definitions/ServiceTicketResponseDefinition"
           examples:
             application/json:
               id: 10
@@ -723,14 +723,14 @@ paths:
         403:
           description: "Forbidden"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Forbidden: you can only modify your own service tickets."
         404:
           description: "Ticket or mechanic not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Mechanic not found."
@@ -754,36 +754,35 @@ paths:
           required: true
           description: "Send an empty object: {}"
           schema:
-            type: "object"
-            additionalProperties: false
+            $ref: "#/definitions/RemoveMechanicPayloadDefinition"
       responses:
         200:
           description: "Mechanic removed or already absent"
           schema:
             oneOf:
-              - $ref: "#/definitions/ServiceTicket"
-              - $ref: "#/definitions/MessageResponse"
+              - $ref: "#/definitions/ServiceTicketResponseDefinition"
+              - $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Service ticket already has no mechanic."
         400:
           description: "Constraint failure"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Unable to remove mechanic. Ensure services.mechanic_id is nullable in the database schema."
         403:
           description: "Forbidden"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Forbidden: you can only modify your own service tickets."
         404:
           description: "Service ticket not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Service ticket not found."
@@ -807,12 +806,12 @@ paths:
           required: true
           description: "Mechanic id lists to add and remove"
           schema:
-            $ref: "#/definitions/EditTicketMechanicsRequest"
+            $ref: "#/definitions/EditTicketMechanicsPayloadDefinition"
       responses:
         200:
           description: "Ticket mechanics updated"
           schema:
-            $ref: "#/definitions/ServiceTicket"
+            $ref: "#/definitions/ServiceTicketResponseDefinition"
           examples:
             application/json:
               id: 10
@@ -822,21 +821,21 @@ paths:
         400:
           description: "Invalid list format"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "add_ids and remove_ids must both be lists."
         403:
           description: "Forbidden"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Forbidden: you can only modify your own service tickets."
         404:
           description: "Ticket or mechanic not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Mechanic with id 999 not found."
@@ -860,12 +859,12 @@ paths:
           required: true
           description: "Inventory link payload"
           schema:
-            $ref: "#/definitions/AddPartRequest"
+            $ref: "#/definitions/AddPartPayloadDefinition"
       responses:
         200:
           description: "Part added"
           schema:
-            $ref: "#/definitions/ServiceTicket"
+            $ref: "#/definitions/ServiceTicketResponseDefinition"
           examples:
             application/json:
               id: 10
@@ -875,21 +874,21 @@ paths:
         400:
           description: "Invalid inventory_id"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "inventory_id is required and must be an integer."
         403:
           description: "Forbidden"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Forbidden: you can only modify your own service tickets."
         404:
           description: "Ticket or inventory item not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Inventory item not found."
@@ -906,7 +905,7 @@ paths:
           schema:
             type: "array"
             items:
-              $ref: "#/definitions/InventoryItem"
+              $ref: "#/definitions/InventoryItemResponseDefinition"
           examples:
             application/json:
               - id: 100
@@ -926,12 +925,12 @@ paths:
           required: true
           description: "Inventory creation payload"
           schema:
-            $ref: "#/definitions/InventoryCreateRequest"
+            $ref: "#/definitions/InventoryCreatePayloadDefinition"
       responses:
         201:
           description: "Inventory item created"
           schema:
-            $ref: "#/definitions/InventoryItem"
+            $ref: "#/definitions/InventoryItemResponseDefinition"
           examples:
             application/json:
               id: 100
@@ -940,7 +939,7 @@ paths:
         400:
           description: "Invalid request"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Request body is required."
@@ -961,7 +960,7 @@ paths:
         200:
           description: "Inventory item found"
           schema:
-            $ref: "#/definitions/InventoryItem"
+            $ref: "#/definitions/InventoryItemResponseDefinition"
           examples:
             application/json:
               id: 100
@@ -970,7 +969,7 @@ paths:
         404:
           description: "Inventory item not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Inventory item not found."
@@ -993,12 +992,12 @@ paths:
           required: true
           description: "Partial inventory update payload"
           schema:
-            $ref: "#/definitions/InventoryUpdateRequest"
+            $ref: "#/definitions/InventoryUpdatePayloadDefinition"
       responses:
         200:
           description: "Inventory item updated"
           schema:
-            $ref: "#/definitions/InventoryItem"
+            $ref: "#/definitions/InventoryItemResponseDefinition"
           examples:
             application/json:
               id: 100
@@ -1007,7 +1006,7 @@ paths:
         404:
           description: "Inventory item not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Inventory item not found."
@@ -1029,14 +1028,14 @@ paths:
         200:
           description: "Inventory item deleted"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Inventory item deleted successfully."
         404:
           description: "Inventory item not found"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "Inventory item not found."
@@ -1055,38 +1054,38 @@ paths:
           required: true
           description: "List of inventory item ids"
           schema:
-            $ref: "#/definitions/DeleteInventoryItemsRequest"
+            $ref: "#/definitions/DeleteInventoryItemsPayloadDefinition"
       responses:
         200:
           description: "Items deleted"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "2 inventory items deleted successfully."
         400:
           description: "Invalid ids payload"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "'ids' field must be a list of integers."
         404:
           description: "No matching inventory ids"
           schema:
-            $ref: "#/definitions/MessageResponse"
+            $ref: "#/definitions/MessageResponseDefinition"
           examples:
             application/json:
               message: "No inventory items found for the provided IDs."
 
 definitions:
-  MessageResponse:
+  MessageResponseDefinition:
     type: "object"
     properties:
       message:
         type: "string"
 
-  MessageWithErrorsResponse:
+  MessageWithErrorsResponseDefinition:
     type: "object"
     properties:
       message:
@@ -1094,13 +1093,13 @@ definitions:
       errors:
         type: "object"
 
-  TokenResponse:
+  TokenResponseDefinition:
     type: "object"
     properties:
       token:
         type: "string"
 
-  LoginRequest:
+  LoginPayloadDefinition:
     type: "object"
     required:
       - "email"
@@ -1112,7 +1111,7 @@ definitions:
       password:
         type: "string"
 
-  Customer:
+  CustomerResponseDefinition:
     type: "object"
     properties:
       id:
@@ -1128,7 +1127,7 @@ definitions:
         type: "string"
         format: "date"
 
-  CustomerCreateRequest:
+  CustomerCreatePayloadDefinition:
     type: "object"
     required:
       - "name"
@@ -1149,7 +1148,7 @@ definitions:
         type: "string"
         format: "date"
 
-  CustomerUpdateRequest:
+  CustomerUpdatePayloadDefinition:
     type: "object"
     properties:
       name:
@@ -1165,13 +1164,13 @@ definitions:
         type: "string"
         format: "date"
 
-  CustomerListResponse:
+  CustomerListResponseDefinition:
     type: "object"
     properties:
       items:
         type: "array"
         items:
-          $ref: "#/definitions/Customer"
+          $ref: "#/definitions/CustomerResponseDefinition"
       page:
         type: "integer"
       per_page:
@@ -1181,7 +1180,7 @@ definitions:
       pages:
         type: "integer"
 
-  Mechanic:
+  MechanicResponseDefinition:
     type: "object"
     properties:
       id:
@@ -1199,7 +1198,7 @@ definitions:
         type: "number"
         format: "float"
 
-  MechanicCreateRequest:
+  MechanicCreatePayloadDefinition:
     type: "object"
     required:
       - "name"
@@ -1221,7 +1220,7 @@ definitions:
         type: "number"
         format: "float"
 
-  MechanicUpdateRequest:
+  MechanicUpdatePayloadDefinition:
     type: "object"
     properties:
       name:
@@ -1237,7 +1236,7 @@ definitions:
         type: "number"
         format: "float"
 
-  MechanicTicketCount:
+  MechanicTicketCountResponseDefinition:
     type: "object"
     properties:
       id:
@@ -1250,7 +1249,7 @@ definitions:
       ticket_count:
         type: "integer"
 
-  ServiceTicket:
+  ServiceTicketResponseDefinition:
     type: "object"
     properties:
       id:
@@ -1262,7 +1261,7 @@ definitions:
       description:
         type: "string"
 
-  ServiceTicketCreateRequest:
+  ServiceTicketCreatePayloadDefinition:
     type: "object"
     required:
       - "description"
@@ -1272,7 +1271,7 @@ definitions:
       mechanic_id:
         type: "integer"
 
-  ServiceTicketUpdateRequest:
+  ServiceTicketUpdatePayloadDefinition:
     type: "object"
     properties:
       customer_id:
@@ -1280,7 +1279,7 @@ definitions:
       description:
         type: "string"
 
-  AssignMechanicRequest:
+  AssignMechanicPayloadDefinition:
     type: "object"
     required:
       - "mechanic_id"
@@ -1288,7 +1287,7 @@ definitions:
       mechanic_id:
         type: "integer"
 
-  EditTicketMechanicsRequest:
+  EditTicketMechanicsPayloadDefinition:
     type: "object"
     properties:
       add_ids:
@@ -1300,7 +1299,7 @@ definitions:
         items:
           type: "integer"
 
-  AddPartRequest:
+  AddPartPayloadDefinition:
     type: "object"
     required:
       - "inventory_id"
@@ -1308,7 +1307,7 @@ definitions:
       inventory_id:
         type: "integer"
 
-  InventoryItem:
+  InventoryItemResponseDefinition:
     type: "object"
     properties:
       id:
@@ -1319,7 +1318,7 @@ definitions:
         type: "number"
         format: "float"
 
-  InventoryCreateRequest:
+  InventoryCreatePayloadDefinition:
     type: "object"
     required:
       - "name"
@@ -1331,7 +1330,7 @@ definitions:
         type: "number"
         format: "float"
 
-  InventoryUpdateRequest:
+  InventoryUpdatePayloadDefinition:
     type: "object"
     properties:
       name:
@@ -1340,7 +1339,7 @@ definitions:
         type: "number"
         format: "float"
 
-  DeleteInventoryItemsRequest:
+  DeleteInventoryItemsPayloadDefinition:
     type: "object"
     required:
       - "ids"
@@ -1349,3 +1348,7 @@ definitions:
         type: "array"
         items:
           type: "integer"
+
+  RemoveMechanicPayloadDefinition:
+    type: "object"
+    additionalProperties: false
