@@ -40,7 +40,7 @@ class InventoryTestCase(unittest.TestCase):
         self.auth_headers = {"Authorization": f"Bearer {self.token}"}
 
         # Only fields the Inventory model accepts: name, price
-        self.item_payload = {
+        self.item_payload: dict[str, object] = {
             "name": "Oil Filter",
             "price": 15.99,
         }
@@ -50,22 +50,72 @@ class InventoryTestCase(unittest.TestCase):
             db.session.remove()
             db.drop_all()
 
-    def test_create_inventory_item(self):
-        res = self.client.post(
-            "/inventory", json=self.item_payload, headers=self.auth_headers
+    def _create_item(self, name: str = "Oil Filter", price: float = 15.99):
+        return self.client.post(
+            "/inventory/",
+            json={"name": name, "price": price},
+            headers=self.auth_headers,
         )
+
+    def test_create_inventory_item(self):
+        res = self._create_item()
         self.assertEqual(res.status_code, 201)
 
+    def test_create_inventory_item_unauthorized(self):
+        res = self.client.post("/inventory/", json=self.item_payload)
+        self.assertEqual(res.status_code, 401)
+
     def test_get_inventory(self):
-        self.client.post(
-            "/inventory", json=self.item_payload, headers=self.auth_headers
-        )
-        res = self.client.get("/inventory")
+        self._create_item()
+        res = self.client.get("/inventory/")
         self.assertEqual(res.status_code, 200)
         # GET /inventory returns a flat list, not a paginated wrapper
         body = res.get_json()
         self.assertIsInstance(body, list)
         self.assertTrue(len(body) >= 1)
+
+    def test_get_inventory_item(self):
+        created = self._create_item().get_json()
+        res = self.client.get(f"/inventory/{created['id']}")
+        self.assertEqual(res.status_code, 200)
+
+    def test_get_inventory_item_not_found(self):
+        res = self.client.get("/inventory/9999")
+        self.assertEqual(res.status_code, 404)
+
+    def test_update_inventory_item(self):
+        created = self._create_item().get_json()
+        res = self.client.put(
+            f"/inventory/{created['id']}",
+            json={"price": 19.99},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(res.status_code, 200)
+
+    def test_delete_inventory_item(self):
+        created = self._create_item().get_json()
+        res = self.client.delete(
+            f"/inventory/{created['id']}", headers=self.auth_headers
+        )
+        self.assertEqual(res.status_code, 200)
+
+    def test_delete_inventory_items_bulk(self):
+        first = self._create_item(name="Brake Pad", price=79.99).get_json()
+        second = self._create_item(name="Air Filter", price=29.99).get_json()
+        res = self.client.delete(
+            "/inventory/delete",
+            json={"ids": [first["id"], second["id"]]},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(res.status_code, 200)
+
+    def test_delete_inventory_items_bulk_invalid(self):
+        res = self.client.delete(
+            "/inventory/delete",
+            json={"ids": ["bad-id"]},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(res.status_code, 400)
 
 
 if __name__ == "__main__":
