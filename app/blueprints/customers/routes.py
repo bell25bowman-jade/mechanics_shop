@@ -11,7 +11,7 @@ from app.models import Customer, Service, db
 
 from .usersSchemas import CustomerSchema, login_schema
 from sqlalchemy import select
-from .. import customers_bp
+from . import customers_bp
 
 @customers_bp.route("/info", methods=["GET"])
 def index():
@@ -33,7 +33,7 @@ def method_not_allowed(err: Any):
         "message": "Use the correct HTTP method for this URL.",
     }), 405
 
-#=======CREATE CUSTOMER========
+#CREATE CUSTOMER========
 @customers_bp.route("/", methods=["POST"])
 def create_customer():
     raw_data = request.get_json(silent=True)
@@ -81,7 +81,7 @@ def create_customer():
 
     return jsonify(customer_schema.dump(new_customer)), 201
 
-
+#login customer 
 @customers_bp.route("/login", methods=["POST"])
 @limiter.limit("5 per minute")
 def login_customer():
@@ -104,7 +104,7 @@ def login_customer():
     token = encode_token(customer.id)
     return jsonify({"token": token}), 200
 
-#======Get all customers========
+#Get all customers
 @customers_bp.route("/", methods=["GET"])
 def get_customers():
     page = request.args.get("page", default=1, type=int)
@@ -138,7 +138,7 @@ def get_customer(id: int):
     customer_schema = CustomerSchema()
     return jsonify(customer_schema.dump(customer)), 200
 
-
+#get_my_tickets
 @customers_bp.route("/my-tickets", methods=["GET"])
 @token_required
 def get_my_tickets(customer_id: int):

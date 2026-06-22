@@ -17,13 +17,13 @@ from ..service_tickets.schemas import ServiceTicketSchema
 cache_cached = cast(Any, cache.cached)  # pyright: ignore[reportUnknownMemberType]
 
 
-def _mechanic_service_tickets_cache_key() -> str:
+def _mechanic_service_tickets_cache_key(*args: Any, **kwargs: Any) -> str:
     view_args = request.view_args or {}
     mechanic_id = view_args.get("mechanic_id", "unknown")
     return f"mechanic_service_tickets_{mechanic_id}"
 
 
-def _mechanic_cache_key() -> str:
+def _mechanic_cache_key(*args: Any, **kwargs: Any) -> str:
     view_args = request.view_args or {}
     mechanic_id = view_args.get("id", "unknown")
     return f"mechanic_{mechanic_id}"

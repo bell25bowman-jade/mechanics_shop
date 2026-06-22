@@ -14,7 +14,7 @@ from typing import Any, cast
 cache_cached = cast(Any, cache.cached)  # pyright: ignore[reportUnknownMemberType]
 
 
-def _inventory_cache_key() -> str:
+def _inventory_cache_key(*args: Any, **kwargs: Any) -> str:
     view_args = request.view_args or {}
     item_id = view_args.get("id", "unknown")
     return f"inventory_{item_id}"

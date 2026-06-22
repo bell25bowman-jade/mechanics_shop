@@ -1,13 +1,10 @@
 from typing import Any, cast
-
 from flask import jsonify, request
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-
 from app.auth import token_required
 from app.extensions import cache
 from app.models import Customer, Inventory, Mechanic, Service, db
-
 from . import service_tickets_bp
 from .schemas import ServiceTicketSchema
 
@@ -15,7 +12,7 @@ from .schemas import ServiceTicketSchema
 cache_cached = cast(Any, cache.cached)  # pyright: ignore[reportUnknownMemberType]
 
 
-def _service_ticket_cache_key() -> str:
+def _service_ticket_cache_key(*args: Any, **kwargs: Any) -> str:
     view_args = request.view_args or {}
     ticket_id = view_args.get("id", "unknown")
     return f"service_ticket_{ticket_id}"
@@ -70,7 +67,7 @@ def get_service_ticket(id: int):
     service_ticket_schema = ServiceTicketSchema()
     return jsonify(service_ticket_schema.dump(service_ticket)), 200
 
-
+#update_service_ticket
 @service_tickets_bp.route("/<int:id>", methods=["PUT"])
 @token_required
 def update_service_ticket(customer_id: int, id: int):
@@ -120,7 +117,7 @@ def delete_service_ticket(customer_id: int, id: int):
     cache.clear()
     return jsonify({"message": "Service ticket deleted successfully."}), 200
 
-
+#assign_mechanic
 @service_tickets_bp.route("/<int:id>/assign-mechanic", methods=["PUT"])
 @token_required
 def assign_mechanic(customer_id: int, id: int):
@@ -149,7 +146,7 @@ def assign_mechanic(customer_id: int, id: int):
     service_ticket_schema = ServiceTicketSchema()
     return jsonify(service_ticket_schema.dump(service_ticket)), 200
 
-
+#remove_mechanic
 @service_tickets_bp.route("/<int:id>/remove-mechanic", methods=["PUT"])
 @token_required
 def remove_mechanic(customer_id: int, id: int):
@@ -178,7 +175,7 @@ def remove_mechanic(customer_id: int, id: int):
     service_ticket_schema = ServiceTicketSchema()
     return jsonify(service_ticket_schema.dump(service_ticket)), 200
 
-
+#  edit_service_ticket_mechanics
 @service_tickets_bp.route("/<int:id>/edit", methods=["PUT"])
 @token_required
 def edit_service_ticket_mechanics(customer_id: int, id: int):
@@ -230,7 +227,7 @@ def edit_service_ticket_mechanics(customer_id: int, id: int):
     service_ticket_schema = ServiceTicketSchema()
     return jsonify(service_ticket_schema.dump(service_ticket)), 200
 
-
+# add_part_to_service_ticket
 @service_tickets_bp.route("/<int:id>/add-part", methods=["PUT"])
 @token_required
 def add_part_to_service_ticket(customer_id: int, id: int):
