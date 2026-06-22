@@ -1,6 +1,8 @@
 from app.__init__ import create_app
 from app.models import db
 
+
+
 app = create_app("development")
 
 if __name__ == "__main__":
