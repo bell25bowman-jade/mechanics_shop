@@ -8,3 +8,4 @@ Flask-Limiter==4.0.0
 flask-swagger-ui==5.21.0
 python-jose==3.5.0
 mysql-connector-python==9.4.0
+gunicorn==22.0.0
