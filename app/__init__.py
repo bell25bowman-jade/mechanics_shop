@@ -45,3 +45,7 @@ def create_app(config_name: str) -> Flask:
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
     
     return app
+
+
+# Allow platforms configured with `gunicorn app:app` to load the WSGI app.
+app = create_app("ProductionConfig")
