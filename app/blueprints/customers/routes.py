@@ -104,9 +104,9 @@ def create_customer():
             return jsonify(_db_error_payload("Unable to create customer.", err)), 500
 
         return jsonify(customer_schema.dump(new_customer)), 201
-    except Exception:
+    except Exception as err:
         db.session.rollback()
-        return jsonify({"message": "Unexpected error while creating customer."}), 500
+        return jsonify(_db_error_payload("Unexpected error while creating customer.", err)), 500
 
 #login customer 
 @customers_bp.route("/login", methods=["POST"])
