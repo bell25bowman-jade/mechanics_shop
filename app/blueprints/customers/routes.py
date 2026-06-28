@@ -14,6 +14,15 @@ from .usersSchemas import CustomerSchema, login_schema
 from sqlalchemy import select
 from . import customers_bp
 
+
+def _db_error_payload(message: str, err: Exception) -> dict[str, Any]:
+    return {
+        "message": message,
+        "error_type": err.__class__.__name__,
+        "error": str(err),
+        "hint": "Verify SQLALCHEMY_DATABASE_URI, SSL settings, and that required tables exist.",
+    }
+
 @customers_bp.route("/info", methods=["GET"])
 def index():
     return jsonify({
@@ -35,6 +44,7 @@ def method_not_allowed(err: Any):
     }), 405
 
 #CREATE CUSTOMER========
+@customers_bp.route("", methods=["POST"])
 @customers_bp.route("/", methods=["POST"])
 def create_customer():
     try:
@@ -73,13 +83,10 @@ def create_customer():
             try:
                 db.create_all()
                 existing_customer = db.session.execute(query).scalar_one_or_none()
-            except SQLAlchemyError:
+            except SQLAlchemyError as retry_err:
                 db.session.rollback()
                 current_app.logger.exception("Customer lookup failed due to DB error: %s", err)
-                return jsonify({
-                    "message": "Database error while checking existing customer.",
-                    "hint": "Verify SQLALCHEMY_DATABASE_URI and database availability.",
-                }), 500
+                return jsonify(_db_error_payload("Database error while checking existing customer.", retry_err)), 500
 
         if existing_customer:
             return jsonify({"message": "Customer with this email already exists."}), 400
@@ -92,9 +99,9 @@ def create_customer():
         except IntegrityError:
             db.session.rollback()
             return jsonify({"message": "Invalid or duplicate customer data."}), 400
-        except SQLAlchemyError:
+        except SQLAlchemyError as err:
             db.session.rollback()
-            return jsonify({"message": "Unable to create customer."}), 500
+            return jsonify(_db_error_payload("Unable to create customer.", err)), 500
 
         return jsonify(customer_schema.dump(new_customer)), 201
     except Exception:
@@ -125,6 +132,7 @@ def login_customer():
     return jsonify({"token": token}), 200
 
 #Get all customers
+@customers_bp.route("", methods=["GET"])
 @customers_bp.route("/", methods=["GET"])
 def get_customers():
     page = request.args.get("page", default=1, type=int)
