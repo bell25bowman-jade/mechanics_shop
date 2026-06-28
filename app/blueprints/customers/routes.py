@@ -1,4 +1,5 @@
 from flask import request, jsonify
+from flask import current_app
 from typing import Any, cast
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -66,9 +67,19 @@ def create_customer():
         query = select(Customer).where(Customer.email == payload.get("email"))
         try:
             existing_customer = db.session.execute(query).scalar_one_or_none()
-        except SQLAlchemyError:
+        except SQLAlchemyError as err:
             db.session.rollback()
-            return jsonify({"message": "Database error while checking existing customer."}), 500
+            # If the schema is missing on first deploy, try creating tables and retry once.
+            try:
+                db.create_all()
+                existing_customer = db.session.execute(query).scalar_one_or_none()
+            except SQLAlchemyError:
+                db.session.rollback()
+                current_app.logger.exception("Customer lookup failed due to DB error: %s", err)
+                return jsonify({
+                    "message": "Database error while checking existing customer.",
+                    "hint": "Verify SQLALCHEMY_DATABASE_URI and database availability.",
+                }), 500
 
         if existing_customer:
             return jsonify({"message": "Customer with this email already exists."}), 400

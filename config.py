@@ -15,6 +15,9 @@ class ProductionConfig:
     _db_url = _clean_env('SQLALCHEMY_DATABASE_URI') or _clean_env('DATABASE_URL')
     if _db_url and _db_url.startswith('postgres://'):
         _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+    if _db_url and _db_url.startswith('postgresql://') and 'sslmode=' not in _db_url:
+        joiner = '&' if '?' in _db_url else '?'
+        _db_url = f"{_db_url}{joiner}sslmode=require"
 
     SQLALCHEMY_DATABASE_URI = _db_url or 'mysql+mysqlconnector://root:812288@localhost/mechanicshop'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
