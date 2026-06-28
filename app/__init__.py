@@ -61,6 +61,8 @@ def create_app(config_name: str) -> Flask:
         return jsonify({
             "message": "Internal server error.",
             "status": 500,
+            "error_type": err.__class__.__name__,
+            "error": str(err),
         }), 500
 
     # This project does not use migrations yet; try to ensure tables exist.
