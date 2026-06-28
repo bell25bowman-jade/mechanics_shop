@@ -1,0 +1,4 @@
+venv/
+__pycache__/
+.env/
+SQLALCHEMY_DATABASE_URI = postgresql://customers:JhKBIbSLrvVzmnzlauStPZ2oGGIdxHbH@dpg-d8vlomb7uimc738jp9cg-a.virginia-postgres.render.com/inventory_mechanics

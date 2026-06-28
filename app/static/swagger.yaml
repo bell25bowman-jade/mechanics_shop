@@ -12,37 +12,6 @@ consumes:
 produces:
   - "application/json"
 
-deploy:
-  needs: test
-  runs-on: ubuntu-latest
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: "3.8"
-
-    - name: Create virtual Environment
-      run: |
-        python -m venv venv
-        source venv/bin/activate
-
-    - name: Install dependencies
-      run: |
-        source venv/bin/activate
-        pip install --upgrade pip
-        pip install -r requirements.txt
-
-    - name: Deploy to Render
-      uses: johnbeynon/render-deploy-action@v1
-      with:
-        api_key: ${{ secrets.RENDER_API_KEY }}
-        service_id: "rnd_4Xsn4BWbdTacMjDhqux3p7QhJAGu" # Replace with your actual Render service ID
-      env:
-        RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-
 tags:
   - name: "Customers"
     description: "Customer account and profile endpoints"
