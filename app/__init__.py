@@ -30,6 +30,8 @@ def create_app(config_name: str) -> Flask:
         "DevelopmentConfig": "config.DevelopmentConfig",
         "testing": "config.TestingConfig",
         "TestingConfig": "config.TestingConfig",
+        "production": "config.ProductionConfig",
+        "ProductionConfig": "config.ProductionConfig",
     }
     app.config.from_object(config_map.get(config_name, config_name))
     
