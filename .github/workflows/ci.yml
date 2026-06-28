@@ -54,7 +54,7 @@ jobs:
       - name: Deploy to Render
         uses: johnbeynon/render-deploy-action@v0.0.8
         with:
-          api_key: ${{ secrets.RENDER_API_KEY }}
+          api_key: ${{ secrets.API_KEY }}
           service_id: "rnd_4Xsn4BWbdTacMjDhqux3p7QhJAGu"
         env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_API_KEY: ${{ secrets.API_KEY }}
