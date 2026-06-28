@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from .extensions import ma, cache, limiter
 from .models import db
 from .blueprints.customers import customers_bp
@@ -7,6 +7,7 @@ from .blueprints.service_tickets import service_tickets_bp
 from .blueprints.inventory import inventory_bp
 from flask_swagger_ui import get_swaggerui_blueprint
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.exceptions import HTTPException
 
 SWAGGER_URL = "/swagger"
 API_URL = "/static/swagger.yaml"
@@ -46,6 +47,21 @@ def create_app(config_name: str) -> Flask:
     app.register_blueprint(mechanics_bp, url_prefix='/mechanics')
     app.register_blueprint(service_tickets_bp, url_prefix='/service-tickets')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
+
+    @app.errorhandler(HTTPException)
+    def handle_http_exception(err: HTTPException):
+        return jsonify({
+            "message": err.description,
+            "status": err.code,
+        }), err.code
+
+    @app.errorhandler(Exception)
+    def handle_unexpected_exception(err: Exception):
+        app.logger.exception("Unhandled application exception: %s", err)
+        return jsonify({
+            "message": "Internal server error.",
+            "status": 500,
+        }), 500
 
     # This project does not use migrations yet; try to ensure tables exist.
     # Do not crash app startup if the DB is temporarily unavailable.
