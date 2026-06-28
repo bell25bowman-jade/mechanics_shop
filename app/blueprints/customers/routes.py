@@ -36,55 +36,59 @@ def method_not_allowed(err: Any):
 #CREATE CUSTOMER========
 @customers_bp.route("/", methods=["POST"])
 def create_customer():
-    raw_data = request.get_json(silent=True)
-    if not isinstance(raw_data, dict):
-        return jsonify({
-            "message": "Request body must be valid JSON.",
-            "hint": "Set Content-Type to application/json and send a JSON object.",
-        }), 400
-
-    payload = cast(dict[str, Any], raw_data)
-
-    # Accept common client key styles.
-    if "make_model" not in payload:
-        make_model_alias = payload.get("makeModel") or payload.get("make-model")
-        if make_model_alias is not None:
-            payload["make_model"] = make_model_alias
-
-    customer_schema = CustomerSchema()
     try:
-        new_customer = cast(Customer, customer_schema.load(payload))  # pyright: ignore[reportUnknownMemberType]
-    except ValidationError as err:
-        return jsonify({
-            "message": "Validation failed.",
-            "errors": cast(Any, err.messages),  # pyright: ignore[reportUnknownMemberType]
-            "required_fields": ["name", "email", "password", "make_model"],
-            "date_format": "YYYY-MM-DD",
-        }), 400
+        raw_data = request.get_json(silent=True)
+        if not isinstance(raw_data, dict):
+            return jsonify({
+                "message": "Request body must be valid JSON.",
+                "hint": "Set Content-Type to application/json and send a JSON object.",
+            }), 400
 
-    query = select(Customer).where(Customer.email == payload.get("email"))
-    try:
-        existing_customer = db.session.execute(query).scalar_one_or_none()
-    except SQLAlchemyError:
+        payload = cast(dict[str, Any], raw_data)
+
+        # Accept common client key styles.
+        if "make_model" not in payload:
+            make_model_alias = payload.get("makeModel") or payload.get("make-model")
+            if make_model_alias is not None:
+                payload["make_model"] = make_model_alias
+
+        customer_schema = CustomerSchema()
+        try:
+            new_customer = cast(Customer, customer_schema.load(payload))  # pyright: ignore[reportUnknownMemberType]
+        except ValidationError as err:
+            return jsonify({
+                "message": "Validation failed.",
+                "errors": cast(Any, err.messages),  # pyright: ignore[reportUnknownMemberType]
+                "required_fields": ["name", "email", "password", "make_model"],
+                "date_format": "YYYY-MM-DD",
+            }), 400
+
+        query = select(Customer).where(Customer.email == payload.get("email"))
+        try:
+            existing_customer = db.session.execute(query).scalar_one_or_none()
+        except SQLAlchemyError:
+            db.session.rollback()
+            return jsonify({"message": "Database error while checking existing customer."}), 500
+
+        if existing_customer:
+            return jsonify({"message": "Customer with this email already exists."}), 400
+
+        new_customer.password = generate_password_hash(new_customer.password)
+
+        db.session.add(new_customer)
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            return jsonify({"message": "Invalid or duplicate customer data."}), 400
+        except SQLAlchemyError:
+            db.session.rollback()
+            return jsonify({"message": "Unable to create customer."}), 500
+
+        return jsonify(customer_schema.dump(new_customer)), 201
+    except Exception:
         db.session.rollback()
-        return jsonify({"message": "Database error while checking existing customer."}), 500
-
-    if existing_customer:
-        return jsonify({"message": "Customer with this email already exists."}), 400
-
-    new_customer.password = generate_password_hash(new_customer.password)
-
-    db.session.add(new_customer)
-    try:
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({"message": "Invalid or duplicate customer data."}), 400
-    except SQLAlchemyError:
-        db.session.rollback()
-        return jsonify({"message": "Unable to create customer."}), 500
-
-    return jsonify(customer_schema.dump(new_customer)), 201
+        return jsonify({"message": "Unexpected error while creating customer."}), 500
 
 #login customer 
 @customers_bp.route("/login", methods=["POST"])
