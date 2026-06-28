@@ -63,7 +63,12 @@ def create_customer():
         }), 400
 
     query = select(Customer).where(Customer.email == payload.get("email"))
-    existing_customer = db.session.execute(query).scalar_one_or_none()
+    try:
+        existing_customer = db.session.execute(query).scalar_one_or_none()
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({"message": "Database error while checking existing customer."}), 500
+
     if existing_customer:
         return jsonify({"message": "Customer with this email already exists."}), 400
 

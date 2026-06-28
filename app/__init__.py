@@ -1,4 +1,4 @@
-from flask import Flask, app
+from flask import Flask
 from .extensions import ma, cache, limiter
 from .models import db
 from .blueprints.customers import customers_bp
@@ -6,6 +6,7 @@ from .blueprints.mechanics import mechanics_bp
 from .blueprints.service_tickets import service_tickets_bp
 from .blueprints.inventory import inventory_bp
 from flask_swagger_ui import get_swaggerui_blueprint
+from sqlalchemy.exc import SQLAlchemyError
 
 SWAGGER_URL = "/swagger"
 API_URL = "/static/swagger.yaml"
@@ -45,6 +46,14 @@ def create_app(config_name: str) -> Flask:
     app.register_blueprint(mechanics_bp, url_prefix='/mechanics')
     app.register_blueprint(service_tickets_bp, url_prefix='/service-tickets')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
+
+    # This project does not use migrations yet; try to ensure tables exist.
+    # Do not crash app startup if the DB is temporarily unavailable.
+    with app.app_context():
+        try:
+            db.create_all()
+        except SQLAlchemyError as err:
+            app.logger.warning("Skipping create_all during startup: %s", err)
     
     return app
 
