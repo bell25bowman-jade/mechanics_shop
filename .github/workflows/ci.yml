@@ -52,7 +52,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Deploy to Render
-        uses: johnbeynon/render-deploy-action@v1
+        uses: johnbeynon/render-deploy-action@v0.0.8
         with:
           api_key: ${{ secrets.RENDER_API_KEY }}
           service_id: "rnd_4Xsn4BWbdTacMjDhqux3p7QhJAGu"
