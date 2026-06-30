@@ -19,10 +19,6 @@ cache_cached = cast(Any, cache.cached)  # pyright: ignore[reportUnknownMemberTyp
 
 def _session_get(model: type[Any], object_id: int) -> Any:
     session = db.session
-    try:
-        return session.get(model, object_id)
-    except AttributeError:
-        pass
     return session.execute(select(model).where(model.id == object_id)).scalar_one_or_none()
 
 
