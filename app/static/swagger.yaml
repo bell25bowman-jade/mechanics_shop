@@ -3,7 +3,7 @@ info:
   title: "Mechanics Shop API"
   description: "API for managing customers, mechanics, service tickets, and inventory in a mechanics shop."
   version: "1.0.0"
-host: "mechanics-shop-5.onrender.com"
+host: "mechanics-shop.onrender.com"
 basePath: "/"
 schemes:
   - "https"
