@@ -17,8 +17,10 @@ from . import customers_bp
 
 def _session_get(model: type[Any], object_id: int) -> Any:
     session = db.session
-    if hasattr(session, "get"):
+    try:
         return session.get(model, object_id)
+    except AttributeError:
+        pass
     return session.execute(select(model).where(model.id == object_id)).scalar_one_or_none()
 
 
