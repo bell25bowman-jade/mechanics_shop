@@ -15,6 +15,13 @@ from sqlalchemy import select
 from . import customers_bp
 
 
+def _session_get(model: type[Any], object_id: int) -> Any:
+    session = db.session
+    if hasattr(session, "get"):
+        return session.get(model, object_id)
+    return session.execute(select(model).where(model.id == object_id)).scalar_one_or_none()
+
+
 def _db_error_payload(message: str, err: Exception) -> dict[str, Any]:
     return {
         "message": message,
@@ -160,7 +167,7 @@ def get_customers():
 #=====get customer by id========
 @customers_bp.route("/<int:id>", methods=["GET"])
 def get_customer(id: int):
-    customer = db.session.get(Customer, id)
+    customer = _session_get(Customer, id)
     if customer is None:
         return jsonify({"message": "Customer not found."}), 404
     customer_schema = CustomerSchema()
@@ -183,7 +190,7 @@ def update_customer(customer_id: int, id: int):
     if customer_id != id:
         return jsonify({"message": "Forbidden: you can only update your own profile."}), 403
 
-    customer = db.session.get(Customer, id)
+    customer = _session_get(Customer, id)
     if customer is None:
         return jsonify({"message": "Customer not found."}), 404
 
@@ -206,7 +213,7 @@ def delete_customer(customer_id: int, id: int):
     if customer_id != id:
         return jsonify({"message": "Forbidden: you can only delete your own profile."}), 403
 
-    customer = db.session.get(Customer, id)
+    customer = _session_get(Customer, id)
     if customer is None:
         return jsonify({"message": "Customer not found."}), 404
     db.session.delete(customer)

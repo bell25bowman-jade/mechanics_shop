@@ -14,6 +14,13 @@ from typing import Any, cast
 cache_cached = cast(Any, cache.cached)  # pyright: ignore[reportUnknownMemberType]
 
 
+def _session_get(model: type[Any], object_id: int) -> Any:
+    session = db.session
+    if hasattr(session, "get"):
+        return session.get(model, object_id)
+    return session.execute(select(model).where(model.id == object_id)).scalar_one_or_none()
+
+
 def _inventory_cache_key(*args: Any, **kwargs: Any) -> str:
     view_args = request.view_args or {}
     item_id = view_args.get("id", "unknown")
@@ -50,7 +57,7 @@ def get_inventory_items():
 @inventory_bp.route("/<int:id>", methods=["GET"])
 @cache_cached(timeout=60, make_cache_key=_inventory_cache_key)
 def get_inventory_item(id: int):
-    item = db.session.get(Inventory, id)
+    item = _session_get(Inventory, id)
     if item is None:
         return jsonify({"message": "Inventory item not found."}), 404
 
@@ -61,7 +68,7 @@ def get_inventory_item(id: int):
 @inventory_bp.route("/<int:id>", methods=["PUT"])
 @token_required
 def update_inventory_item(customer_id: int, id: int):
-    item = db.session.get(Inventory, id)
+    item = _session_get(Inventory, id)
     if item is None:
         return jsonify({"message": "Inventory item not found."}), 404
 
@@ -79,7 +86,7 @@ def update_inventory_item(customer_id: int, id: int):
 @inventory_bp.route("/<int:id>", methods=["DELETE"])
 @token_required
 def delete_inventory_item(customer_id: int, id: int):
-    item = db.session.get(Inventory, id)
+    item = _session_get(Inventory, id)
     if item is None:
         return jsonify({"message": "Inventory item not found."}), 404
 

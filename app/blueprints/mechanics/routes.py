@@ -17,6 +17,13 @@ from ..service_tickets.schemas import ServiceTicketSchema
 cache_cached = cast(Any, cache.cached)  # pyright: ignore[reportUnknownMemberType]
 
 
+def _session_get(model: type[Any], object_id: int) -> Any:
+    session = db.session
+    if hasattr(session, "get"):
+        return session.get(model, object_id)
+    return session.execute(select(model).where(model.id == object_id)).scalar_one_or_none()
+
+
 def _mechanic_service_tickets_cache_key(*args: Any, **kwargs: Any) -> str:
     view_args = request.view_args or {}
     mechanic_id = view_args.get("mechanic_id", "unknown")
@@ -32,7 +39,7 @@ def _mechanic_cache_key(*args: Any, **kwargs: Any) -> str:
 @mechanics_bp.route("/<int:mechanic_id>/service-tickets", methods=["GET"])
 @cache_cached(timeout=60, make_cache_key=_mechanic_service_tickets_cache_key)
 def get_mechanic_service_tickets(mechanic_id: int):
-    mechanic = db.session.get(Mechanic, mechanic_id)
+    mechanic = _session_get(Mechanic, mechanic_id)
     if mechanic is None:
         return jsonify({"message": "Mechanic not found."}), 404
 
@@ -100,7 +107,7 @@ def get_mechanics_by_most_tickets():
 @mechanics_bp.route("/<int:id>", methods=["GET"])
 @cache_cached(timeout=60, make_cache_key=_mechanic_cache_key)
 def get_mechanic(id: int):
-    mechanic = db.session.get(Mechanic, id)
+    mechanic = _session_get(Mechanic, id)
     if mechanic is None:
         return jsonify({"message": "Mechanic not found."}), 404
 
@@ -111,7 +118,7 @@ def get_mechanic(id: int):
 @mechanics_bp.route("/<int:id>", methods=["PUT"])
 @token_required
 def update_mechanic(customer_id: int, id: int):
-    mechanic = db.session.get(Mechanic, id)
+    mechanic = _session_get(Mechanic, id)
     if mechanic is None:
         return jsonify({"message": "Mechanic not found."}), 404
 
@@ -129,7 +136,7 @@ def update_mechanic(customer_id: int, id: int):
 @mechanics_bp.route("/<int:id>", methods=["DELETE"])
 @token_required
 def delete_mechanic(customer_id: int, id: int):
-    mechanic = db.session.get(Mechanic, id)
+    mechanic = _session_get(Mechanic, id)
     if mechanic is None:
         return jsonify({"message": "Mechanic not found."}), 404
 
