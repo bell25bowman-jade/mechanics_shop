@@ -12,6 +12,14 @@ from .schemas import ServiceTicketSchema
 cache_cached = cast(Any, cache.cached)  # pyright: ignore[reportUnknownMemberType]
 
 
+def _session_get(model: type[Any], object_id: int) -> Any:
+    """Compatibility lookup for sessions that do not implement `.get()` (e.g. lightweight test/dummy sessions)."""
+    session = db.session
+    if hasattr(session, "get"):
+        return session.get(model, object_id)
+    return session.execute(select(model).where(model.id == object_id)).scalar_one_or_none()
+
+
 def _service_ticket_cache_key(*args: Any, **kwargs: Any) -> str:
     view_args = request.view_args or {}
     ticket_id = view_args.get("id", "unknown")
@@ -28,13 +36,13 @@ def create_service_ticket(customer_id: int):
     description = data.get("description")
     mechanic_id = data.get("mechanic_id")
 
-    customer = db.session.get(Customer, customer_id)
+    customer = _session_get(Customer, customer_id)
     if customer is None:
         return jsonify({"message": "Customer not found."}), 404
 
     mechanic = None
     if mechanic_id is not None:
-        mechanic = db.session.get(Mechanic, mechanic_id)
+        mechanic = _session_get(Mechanic, mechanic_id)
         if mechanic is None:
             return jsonify({"message": "Mechanic not found."}), 404
 
@@ -60,7 +68,7 @@ def get_service_tickets():
 @service_tickets_bp.route("/<int:id>", methods=["GET"])
 @cache_cached(timeout=60, make_cache_key=_service_ticket_cache_key)
 def get_service_ticket(id: int):
-    service_ticket = db.session.get(Service, id)
+    service_ticket = _session_get(Service, id)
     if service_ticket is None:
         return jsonify({"message": "Service ticket not found."}), 404
 
@@ -71,7 +79,7 @@ def get_service_ticket(id: int):
 @service_tickets_bp.route("/<int:id>", methods=["PUT"])
 @token_required
 def update_service_ticket(customer_id: int, id: int):
-    service_ticket = db.session.get(Service, id)
+    service_ticket = _session_get(Service, id)
     if service_ticket is None:
         return jsonify({"message": "Service ticket not found."}), 404
 
@@ -88,7 +96,7 @@ def update_service_ticket(customer_id: int, id: int):
     if target_customer_id is not None:
         if target_customer_id != customer_id:
             return jsonify({"message": "Forbidden: you cannot reassign ticket ownership."}), 403
-        customer = db.session.get(Customer, target_customer_id)
+        customer = _session_get(Customer, target_customer_id)
         if customer is None:
             return jsonify({"message": "Customer not found."}), 404
         service_ticket.customer = customer
@@ -105,7 +113,7 @@ def update_service_ticket(customer_id: int, id: int):
 @service_tickets_bp.route("/<int:id>", methods=["DELETE"])
 @token_required
 def delete_service_ticket(customer_id: int, id: int):
-    service_ticket = db.session.get(Service, id)
+    service_ticket = _session_get(Service, id)
     if service_ticket is None:
         return jsonify({"message": "Service ticket not found."}), 404
 
@@ -121,7 +129,7 @@ def delete_service_ticket(customer_id: int, id: int):
 @service_tickets_bp.route("/<int:id>/assign-mechanic", methods=["PUT"])
 @token_required
 def assign_mechanic(customer_id: int, id: int):
-    service_ticket = db.session.get(Service, id)
+    service_ticket = _session_get(Service, id)
     if service_ticket is None:
         return jsonify({"message": "Service ticket not found."}), 404
 
@@ -133,7 +141,7 @@ def assign_mechanic(customer_id: int, id: int):
         return jsonify({"message": "Request body is required."}), 400
 
     mechanic_id = data.get("mechanic_id")
-    mechanic = db.session.get(Mechanic, mechanic_id)
+    mechanic = _session_get(Mechanic, mechanic_id)
     if mechanic is None:
         return jsonify({"message": "Mechanic not found."}), 404
 
@@ -150,7 +158,7 @@ def assign_mechanic(customer_id: int, id: int):
 @service_tickets_bp.route("/<int:id>/remove-mechanic", methods=["PUT"])
 @token_required
 def remove_mechanic(customer_id: int, id: int):
-    service_ticket = db.session.get(Service, id)
+    service_ticket = _session_get(Service, id)
     if service_ticket is None:
         return jsonify({"message": "Service ticket not found."}), 404
 
@@ -179,7 +187,7 @@ def remove_mechanic(customer_id: int, id: int):
 @service_tickets_bp.route("/<int:id>/edit", methods=["PUT"])
 @token_required
 def edit_service_ticket_mechanics(customer_id: int, id: int):
-    service_ticket = db.session.get(Service, id)
+    service_ticket = _session_get(Service, id)
     if service_ticket is None:
         return jsonify({"message": "Service ticket not found."}), 404
 
@@ -206,14 +214,14 @@ def edit_service_ticket_mechanics(customer_id: int, id: int):
     remove_ids = cast(list[int], remove_ids_raw)
 
     for mechanic_id in remove_ids:
-        mechanic = db.session.get(Mechanic, mechanic_id)
+        mechanic = _session_get(Mechanic, mechanic_id)
         if mechanic is not None and mechanic in service_ticket.mechanics:
             service_ticket.mechanics.remove(mechanic)
             if service_ticket.mechanic_id == mechanic_id:
                 service_ticket.mechanic = None
 
     for mechanic_id in add_ids:
-        mechanic = db.session.get(Mechanic, mechanic_id)
+        mechanic = _session_get(Mechanic, mechanic_id)
         if mechanic is None:
             return jsonify({"message": f"Mechanic with id {mechanic_id} not found."}), 404
         if mechanic not in service_ticket.mechanics:
@@ -231,7 +239,7 @@ def edit_service_ticket_mechanics(customer_id: int, id: int):
 @service_tickets_bp.route("/<int:id>/add-part", methods=["PUT"])
 @token_required
 def add_part_to_service_ticket(customer_id: int, id: int):
-    service_ticket = db.session.get(Service, id)
+    service_ticket = _session_get(Service, id)
     if service_ticket is None:
         return jsonify({"message": "Service ticket not found."}), 404
 
@@ -246,7 +254,7 @@ def add_part_to_service_ticket(customer_id: int, id: int):
     if not isinstance(inventory_id, int):
         return jsonify({"message": "inventory_id is required and must be an integer."}), 400
 
-    inventory_item = db.session.get(Inventory, inventory_id)
+    inventory_item = _session_get(Inventory, inventory_id)
     if inventory_item is None:
         return jsonify({"message": "Inventory item not found."}), 404
 
